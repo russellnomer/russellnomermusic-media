@@ -1,0 +1,26 @@
+name: Assemble media
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decode parts into MP4 files
+        run: |
+          shopt -s nullglob
+          parts=(parts/*.part*)
+          if [ ${#parts[@]} -eq 0 ]; then echo "nothing to assemble"; exit 0; fi
+          for n in presave outnow; do
+            cat parts/wrong-reasons-$n.b64.part* | base64 -d > wrong-reasons-$n.mp4
+          done
+          sha256sum -c SHA256SUMS
+          git rm -q -r parts
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add wrong-reasons-presave.mp4 wrong-reasons-outnow.mp4
+          git commit -m "Add Wrong Reasons vertical videos"
+          git push
